@@ -21,8 +21,14 @@ function love.load()
 
  -- Setting the retro font for our game
     smallFont = love.graphics.newFont('font.ttf', 8)
-
     scoreFont = love.graphics.newFont('font.ttf', 32)
+    victoryFont = love.graphics.newFont('font.ttf', 24)
+
+    sounds = {
+        ['paddle_hit'] = love.audio.newSource('sounds/paddle_hit.wav', 'static'),
+        ['point_scored'] = love.audio.newSource('sounds/score.wav', 'static'),
+        ['wall_hit'] = love.audio.newSource('sounds/wall_hit.wav', 'static')
+    }
 
     player1Score = 0
     player2Score = 0
@@ -55,12 +61,13 @@ function love.update(dt)
 
         --Updating the scores of the players
         if ball.x <= 0 then
-            player2Score = player2Score + 1
             servingPlayer = 1
+            player2Score = player2Score + 1
+            sounds['point_scored']:play()
             ball:reset()
             ball.dx = 100
 
-            if player2Score >= 5 then
+            if player2Score == 5 then
                 gameState = 'victory'
                 winningPlayer = 2
             else 
@@ -69,12 +76,13 @@ function love.update(dt)
         end    
 
         if ball.x >= VIRTUAL_WIDTH - 4 then
-            player1Score = player1Score + 1
             servingPlayer = 2
+            player1Score = player1Score + 1
+            sounds['point_scored']:play()
             ball:reset()
             ball.dx = -100
 
-            if player2Score >= 5 then
+            if player1Score == 5 then
                 gameState = 'victory'
                 winningPlayer = 1
             else 
@@ -87,6 +95,8 @@ function love.update(dt)
             ball.dx = -ball.dx * 1.03
             ball.x = paddle1.x + 5
 
+            sounds['paddle_hit']:play()
+            
             --Velocity going in same direction with randomization 
             if ball.dy < 0 then
                 ball.dy = -math.random(10, 150)
@@ -99,6 +109,8 @@ function love.update(dt)
             ball.dx = -ball.dx * 1.03
             ball.x = paddle2.x - 4
 
+            sounds['paddle_hit']:play()
+
             if ball.dy < 0 then
                 ball.dy = -math.random(10, 150)
             else
@@ -110,11 +122,13 @@ function love.update(dt)
         if ball.y <= 0 then
             ball.dy = -ball.dy
             ball.y = 0
+            sounds['wall_hit']:play()
         end
 
         if ball.y >= VIRTUAL_HEIGHT - 4 then
             ball.dy = -ball.dy
             ball.y = VIRTUAL_HEIGHT-4
+            sounds['wall_hit']:play()
         end
     end
     paddle1:update(dt)
@@ -149,6 +163,10 @@ function love.keypressed(key)
     elseif key == 'enter' or key == 'return' then
         if gameState == 'start' then
             gameState = 'serve'
+        elseif gameState == 'victory' then
+            gameState = 'start'
+            player1Score = 0
+            player2Score = 0
         elseif gameState == 'serve' then
             gameState = 'play'
         end
@@ -167,12 +185,17 @@ function love.draw()
     --Welcome text on top of the screen
     love.graphics.setFont(smallFont)
     if gameState == 'start' then
-        love.graphics.printf("Welcome to Pong!", 0, 20, VIRTUAL_WIDTH, 'center')
-        love.graphics.printf("Press Enter to Play!", 0, 32, VIRTUAL_WIDTH, 'center')
+        love.graphics.printf("Welcome to Pong!", 0, 10, VIRTUAL_WIDTH, 'center')
+        love.graphics.printf("Press Enter to Play!", 0, 20, VIRTUAL_WIDTH, 'center')
     elseif gameState == 'serve' then
-        love.graphics.printf("Player" .. tostring(servingPlayer) .."'s turn!", 0, 20, VIRTUAL_WIDTH, 'center')
-        love.graphics.printf("Press Enter to Serve", 0, 32, VIRTUAL_WIDTH, 'center')
+        love.graphics.printf("Player " .. tostring(servingPlayer) .."'s turn!", 0, 10, VIRTUAL_WIDTH, 'center')
+        love.graphics.printf("Press Enter to Serve", 0, 20, VIRTUAL_WIDTH, 'center')
     elseif gameState == 'victory' then
+        love.graphics.setFont(victoryFont)
+        love.graphics.printf("Player " .. tostring(winningPlayer) .. " wins", 0, 10, VIRTUAL_WIDTH, 'center')
+        love.graphics.setFont(smallFont)
+        love.graphics.printf("Press Enter to Serve", 0, 42, VIRTUAL_WIDTH, 'center')
+    elseif gameState == 'play' then
 
     end
     --Rendering scores of the players
